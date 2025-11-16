@@ -1,169 +1,175 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
+import { NameFilterMode } from "@/types/filters";
 
-/* Generate a deterministic, stable ID for an advocate object.
- * CONTEXT: The mock API data does not include unique identifiers. To ensure stable React keys
- * we generate a SHA-256 hash from several non-sensitive, stable fields.
- * This provides deterministic, unique IDs per advocate that fix React reconciliation warnings.
- * (In a real application, IDs should be issued by the backend or database.) */
-async function generateStableId(advocate: Advocate) {
-  const stableString = `${advocate.firstName}-${advocate.lastName}-${advocate.city}-${advocate.degree}`;
+import { generateStableId } from "@/utils/id";
+import { sortAdvocates, SortKey } from "@/utils/sort";
+import { advocateMatchesFilters } from "@/utils/filter";
+import { formatPhone } from "@/utils/format";
 
-  let hashBuffer: ArrayBuffer;
-  try {
-    hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      new TextEncoder().encode(stableString)
-    );
-  } catch {
-    /* Last-resort fallback */
-    return `fallback-${Math.random().toString(36).slice(2)}`;
-  }
-
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+import FiltersBar from "@/components/FiltersBar";
+import SortDropdown from "@/components/SortDropdown";
+import SpecialtiesCell from "@/components/SpecialtiesCell";
 
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [nameMode, setNameMode] = useState<NameFilterMode>("full");
+  const [exactMatch, setExactMatch] = useState(false);
+  const [minYears, setMinYears] = useState<number | null>(null);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedDegrees, setSelectedDegrees] = useState<string[]>([]);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+
+  // Sorting
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
   useEffect(() => {
-    /* Fetch and prepare advocate data. */
-    const loadAdvocates = async () => {
+    const load = async () => {
       try {
         const res = await fetch("/api/advocates");
-
-        if (!res.ok) {
-          throw new Error(`Request failed with status ${res.status}`);
-        }
-
         const json: AdvocatesResponse = await res.json();
 
-        if (!json?.data || !Array.isArray(json.data)) {
-          throw new Error("Malformed API response: missing `data` field.");
-        }
-
-        const advocatesWithIds: Advocate[] = await Promise.all(
-          json.data.map(async (adv) => ({
-            ...adv,
-            _id: await generateStableId(adv),
+        const withIds = await Promise.all(
+          json.data.map(async (a) => ({
+            ...a,
+            _id: await generateStableId(a),
           }))
         );
 
-        setAdvocates(advocatesWithIds);
+        setAdvocates(withIds);
       } catch (err: any) {
-        setError(err.message || "Failed to load advocates.");
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    loadAdvocates();
+    load();
   }, []);
 
-  /* Memoized client-side filtering. */
-  const filteredAdvocates = useMemo(() => {
-    const term = searchTerm.toLowerCase();
+  const filtered = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
 
-    return advocates.filter((a) => {
-      return (
-        a.firstName.toLowerCase().includes(term) ||
-        a.lastName.toLowerCase().includes(term) ||
-        a.city.toLowerCase().includes(term) ||
-        a.degree.toLowerCase().includes(term) ||
-        a.specialties.some((s) => s.toLowerCase().includes(term)) ||
-        a.yearsOfExperience.toString().includes(term)
-      );
-    });
-  }, [searchTerm, advocates]);
-
-  const onReset = () => setSearchTerm("");
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setSearchTerm(e.target.value);
-
-  if (loading) {
-    return <main style={{ margin: "24px" }}>Loading advocates…</main>;
-  }
-
-  if (error) {
-    return (
-      <main style={{ margin: "24px" }}>
-        <p>Error loading advocates:</p>
-        <pre>{error}</pre>
-      </main>
+    const res = advocates.filter((a) =>
+      advocateMatchesFilters(a, {
+        search,
+        nameMode,
+        exactMatch,
+        selectedCities,
+        selectedDegrees,
+        selectedSpecialties,
+        minYears,
+      })
     );
-  }
+
+    return sortAdvocates(res, sortKey, sortDir);
+  }, [
+    advocates,
+    searchTerm,
+    nameMode,
+    exactMatch,
+    selectedCities,
+    selectedDegrees,
+    selectedSpecialties,
+    minYears,
+    sortKey,
+    sortDir,
+  ]);
+
+  if (loading) return <main>Loading…</main>;
+  if (error) return <main>Error: {error}</main>;
+
+  const cities = Array.from(new Set(advocates.map(a => a.city))).sort();
+  const degrees = Array.from(new Set(advocates.map(a => a.degree))).sort();
+  const specialties = Array.from(
+    new Set(advocates.flatMap(a => a.specialties))
+  ).sort();
+
+  const columns = [
+    { key: "firstName", label: "First" },
+    { key: "lastName", label: "Last" },
+    { key: "degree", label: "Degree" },
+    { key: "yearsOfExperience", label: "Years" },
+    { key: "city", label: "City" },
+  ];
 
   return (
     <main style={{ margin: "24px" }}>
       <h1>Solace Advocates</h1>
 
-      <div style={{ marginBottom: "16px" }}>
-        {/* ACCESSIBILITY FIX:
-          * The original implementation included an unlabeled <input>.
-          * Adding a proper <label> with a "for" attribute ensures the input is announced
-          * correctly by screen readers and provides accessible name computation. */}
-        <label htmlFor="search-input">Search advocates:</label>
-        <input
-          id="search-input"
-          style={{ border: "1px solid black" }}
-          value={searchTerm}
-          onChange={onChange}
-        />
-
-        <button onClick={onReset} style={{ marginLeft: "8px" }}>
-          Reset Search
-        </button>
-      </div>
-
-      {filteredAdvocates.length === 0 && (
-        <p>No advocates match your search.</p>
-      )}
+      <FiltersBar
+        {...{
+          searchTerm,
+          setSearchTerm,
+          nameMode,
+          setNameMode,
+          exactMatch,
+          setExactMatch,
+          minYears,
+          setMinYears,
+          cities,
+          degrees,
+          specialties,
+          selectedCities,
+          setSelectedCities,
+          selectedDegrees,
+          setSelectedDegrees,
+          selectedSpecialties,
+          setSelectedSpecialties,
+        }}
+      />
 
       <table>
-        <caption className="sr-only">List of Solace advocate search results</caption>
         <thead>
-          {/* FIX:
-            * The original code placed <th> elements directly inside <thead>,
-            * which violates HTML semantics and caused hydration mismatches.
-            * A <tr> wrapper is required for valid markup. */}
           <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>City</th>
-            <th>Degree</th>
+            {columns.map((col) => (
+              <th key={col.key}>
+                <SortDropdown
+                  label={col.label}
+                  onAsc={() => {
+                    setSortKey(col.key as SortKey);
+                    setSortDir("asc");
+                  }}
+                  onDesc={() => {
+                    setSortKey(col.key as SortKey);
+                    setSortDir("desc");
+                  }}
+                  onClear={() => setSortKey(null)}
+                  isActive={sortKey === col.key}
+                  direction={sortDir}
+                />
+              </th>
+            ))}
             <th>Specialties</th>
-            <th>Years of Experience</th>
-            <th>Phone Number</th>
+            <th>Phone</th>
           </tr>
         </thead>
 
         <tbody>
-          {filteredAdvocates.map((advocate) => {
-            if (!advocate._id) return null;
+          {filtered.map((a) => (
+            <tr key={a._id}>
+              <td>{a.firstName}</td>
+              <td>{a.lastName}</td>
+              <td>{a.degree}</td>
+              <td>{a.yearsOfExperience}</td>
+              <td>{a.city}</td>
 
-            return (
-              <tr key={advocate._id}>
-                <td>{advocate.firstName}</td>
-                <td>{advocate.lastName}</td>
-                <td>{advocate.city}</td>
-                <td>{advocate.degree}</td>
-                <td>
-                  {advocate.specialties.map((s, i) => (
-                    <div key={i}>{s}</div>
-                  ))}
-                </td>
-                <td>{advocate.yearsOfExperience}</td>
-                <td>{advocate.phoneNumber}</td>
-              </tr>
-            );
-          })}
+              <td>
+                <SpecialtiesCell items={a.specialties} />
+              </td>
+
+              <td>{formatPhone(a.phoneNumber)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </main>
