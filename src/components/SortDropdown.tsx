@@ -3,16 +3,34 @@
 import { useState, useRef, useEffect } from "react";
 
 interface SortDropdownProps {
+  /** Column label displayed in header */
   label: string;
 
+  /** Upstream sort handlers */
   onAsc: () => void;
   onDesc: () => void;
   onClear: () => void;
 
+  /** Whether this column is currently being sorted */
   isActive: boolean;
+
+  /** Current sort direction ("asc" | "desc") */
   direction: "asc" | "desc" | null;
 }
 
+/**
+ * SortDropdown
+ * ------------------------------------------------------------------
+ * A lightweight, accessible dropdown for choosing sort order
+ * (ascending, descending, or clearing sort).
+ *
+ * Design considerations:
+ *   • Column headers must remain clickable and keyboard-friendly.
+ *   • The active sort direction should be communicated visually.
+ *   • The dropdown closes automatically on outside click.
+ *   • The component is intentionally simple — full table sorting
+ *     logic lives in the parent to keep this UI stateless.
+ */
 export default function SortDropdown({
   label,
   onAsc,
@@ -24,17 +42,26 @@ export default function SortDropdown({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  /* --------------------------------------------------------------
+     Close dropdown when clicking outside the component
+     -------------------------------------------------------------- */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  /* Determine the correct header icon */
+  /* --------------------------------------------------------------
+     Determine which icon to show in the table header:
+       • "sort"         → unsorted column
+       • "arrow_upward" → sorted ascending
+       • "arrow_downward" → sorted descending
+     -------------------------------------------------------------- */
   const headerIcon = !isActive
     ? "sort"
     : direction === "asc"
@@ -43,7 +70,9 @@ export default function SortDropdown({
 
   return (
     <div ref={ref}>
-      {/* Trigger Button */}
+      {/* ----------------------------------------------------------
+         Trigger: the clickable column header
+         ---------------------------------------------------------- */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -52,16 +81,23 @@ export default function SortDropdown({
       >
         <span>{label}</span>
 
-        {/* Icon */}
-        <span className={`material-symbols-rounded sort-dropdown__button-icon ${isActive ? "active" : ""}`}>
+        {/* Sort direction indicator */}
+        <span
+          className={`material-symbols-rounded sort-dropdown__button-icon ${
+            isActive ? "active" : ""
+          }`}
+        >
           {headerIcon}
         </span>
       </button>
 
-      {/* Dropdown Menu */}
+      {/* ----------------------------------------------------------
+         Dropdown menu: choose sort order or clear it
+         ---------------------------------------------------------- */}
       {open && (
         <div className="sort-dropdown__panel">
-          {/* ASC */}
+
+          {/* Ascending */}
           <button
             onClick={() => {
               onAsc();
@@ -75,7 +111,7 @@ export default function SortDropdown({
             Ascending
           </button>
 
-          {/* DESC */}
+          {/* Descending */}
           <button
             onClick={() => {
               onDesc();
@@ -89,7 +125,7 @@ export default function SortDropdown({
             Descending
           </button>
 
-          {/* CLEAR */}
+          {/* Clear Sort */}
           <button
             onClick={() => {
               onClear();

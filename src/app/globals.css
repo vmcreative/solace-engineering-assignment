@@ -2,15 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --------------------------------------------- */
-/*  BASE TYPOGRAPHY AND ROOT GLOBAL ELEMENTS     */
-/* --------------------------------------------- */
-
+/* ============================================================================
+   GLOBAL BASE LAYOUT + TYPOGRAPHY
+   ----------------------------------------------------------------------------
+   Establishes project-wide typography, layout constraints, and background
+   styling. Uses Tailwind’s `@layer base` so overrides slot naturally into the
+   cascade and keeps the rest of the project purely utility-driven.
+============================================================================ */
 @layer base {
   html, body {
     @apply h-full;
   }
 
+  /* Main UI background and global font setup */
   body {
     @apply
       font-sans text-neutral-dark
@@ -18,11 +22,13 @@
       flex flex-col overflow-hidden;
   }
 
+  /* Constrain page width and establish vertical rhythm */
   main {
     @apply
       w-full max-w-[1440px] mx-auto pt-10 h-[100vh] flex flex-col;
   }
 
+  /* Display headings use the secondary serif font */
   h1, h2, h3, h4, h5, h6 {
     @apply font-display text-green-dark font-normal;
   }
@@ -31,17 +37,32 @@
     @apply text-4xl mb-8;
   }
 
+  /* Consistent label styling across all form controls */
   label {
     @apply block text-sm text-green-dark mb-1 cursor-pointer;
   }
 }
 
+/* ============================================================================
+   COMPONENT LAYER
+   ----------------------------------------------------------------------------
+   Modular component styles grouped by domain:
+   • Filter bar
+   • Dropdowns (MultiSelect + Sort)
+   • Advocates table UI
+   • Specialties cell (expandable tag list)
+   • Loader and entrance effects
+============================================================================ */
 @layer components {
 
-  /* --------------------------------------------- */
-  /*  FILTER BAR                                   */
-  /* --------------------------------------------- */
-
+  /* ------------------------------------------------------------------------
+     FILTER BAR
+     ------------------------------------------------------------------------
+     These classes style the filter interface at the top of the page:
+     - consistent spacing and alignment
+     - clear form field affordances
+     - matches visual identity from the spec
+  ------------------------------------------------------------------------- */
   .filters-bar {
     @apply space-y-6 mx-6;
   }
@@ -72,10 +93,12 @@
       transition;
   }
 
+  /* Shared wrapper for all filter fields */
   .filters-bar__field {
     @apply flex flex-col grow relative w-full max-w-[25%];
   }
 
+  /* Button that triggers multiselect dropdown */
   .filters-bar__selector {
     @apply
       w-full text-left px-3 py-2 
@@ -89,7 +112,7 @@
   .filters-bar__placeholder {
     @apply text-neutral;
   }
- 
+
   .filters-bar__name-mode {
     @apply max-w-[15%]
   }
@@ -98,10 +121,11 @@
     @apply flex items-center gap-2 mt-[.75rem] mb-0;
   }
 
-  /* --------------------------------------------- */
-  /* RESPONSIVE FILTER BAR BREAKPOINT (<768px)     */
-  /* --------------------------------------------- */
-
+  /* ------------------------------------------------------------------------
+     FILTER BAR — RESPONSIVE (Mobile-first adjustments)
+     ------------------------------------------------------------------------
+     Ensures filter UI gracefully wraps into 2 columns on small screens.
+  ------------------------------------------------------------------------- */
   @media (max-width: 768px) {
     .filters-bar__row {
       @apply flex-wrap gap-x-4 gap-y-0;
@@ -112,7 +136,7 @@
     }
 
     .filters-bar__field.filters-bar__name {
-      @apply max-w-full
+      @apply max-w-full;
     }
 
     .filters-bar__inline {
@@ -120,10 +144,15 @@
     }
   }
 
-  /* --------------------------------------------- */
-  /*  DROPDOWN PANELS & MULTISELECT STYLES         */
-  /* --------------------------------------------- */
 
+  /* ------------------------------------------------------------------------
+     DROPDOWN PANELS (MultiSelect + Sort)
+     ------------------------------------------------------------------------
+     Shared dropdown container styling:
+     - Rounded cards with soft shadows
+     - Scrollable panels for large option lists
+     - Utility-driven minimal spec design
+  ------------------------------------------------------------------------- */
   .filter-dropdown__panel,
   .sort-dropdown__panel {
     @apply
@@ -159,6 +188,7 @@
     @apply text-sm text-neutral text-center py-4;
   }
 
+  /* Sort header triggers */
   .sort-dropdown__button {
     @apply
       flex items-center gap-1 cursor-pointer border-none
@@ -166,6 +196,7 @@
       transition;
   }
 
+  /* Default icon state, overridden when active */
   .sort-dropdown__button-icon.material-symbols-rounded {
     @apply text-[1.25rem] text-opal-transparent transition;
   }
@@ -191,10 +222,13 @@
     @apply shrink-0 text-[1.25rem];
   }
 
-  /* --------------------------------------------- */
-  /*  TABLE STYLING                                */
-  /* --------------------------------------------- */
 
+  /* ------------------------------------------------------------------------
+     ADVOCATES TABLE
+     ------------------------------------------------------------------------
+     Sticky header, mobile-friendly scrolling container, and a clean,
+     highly readable table layout optimized for large datasets.
+  ------------------------------------------------------------------------- */
   .advocates-scroll {
     @apply w-full overflow-y-scroll overflow-x-auto max-h-full;
     scrollbar-width: none;
@@ -228,6 +262,7 @@
     @apply px-4 py-3 text-left relative;
   }
 
+  /* Fine-grained column width tuning for better alignment */
   .advocates .advocates-header__degree {
     @apply w-[102px];
   }
@@ -246,6 +281,7 @@
     @apply px-4 py-4 whitespace-nowrap bg-white;
   }
 
+  /* Rounded bottom shape for fully visible tables */
   .advocate:last-of-type td:first-of-type {
     @apply rounded-bl-xl;
   }
@@ -254,6 +290,7 @@
     @apply rounded-br-xl;
   }
 
+  /* Specialties column allows multi-line tags */
   .advocate .advocate__specialties {
     @apply whitespace-normal pb-[2.5rem] max-w-[320px];
   }
@@ -264,6 +301,7 @@
     @apply font-semibold;
   }
 
+  /* Mobile truncation of border rounding to align full-width table */
   @media (max-width: 768px) {
     .advocates-container {
       @apply mx-0 rounded-none;
@@ -278,10 +316,13 @@
     }
   }
 
-  /* --------------------------------------------- */
-  /* Specialties Cell                              */
-  /* --------------------------------------------- */
 
+  /* ------------------------------------------------------------------------
+     SPECIALTIES CELL (expandable tag list)
+     ------------------------------------------------------------------------
+     Provides overflow collapse behavior, fade gradient, and toggle button.
+     Pairs with the React logic in SpecialtiesCell.tsx.
+  ------------------------------------------------------------------------- */
   .specialties {
     @apply relative w-full;
   }
@@ -331,10 +372,13 @@
     @apply text-base;
   }
 
-  /* --------------------------------------------- */
-  /*  LOADING INDICATOR / FADE-IN                  */
-  /* --------------------------------------------- */
 
+  /* ------------------------------------------------------------------------
+     LOADING + ENTRANCE ANIMATIONS
+     ------------------------------------------------------------------------
+     Subtle, non-intrusive load feedback + first-render fade-in to
+     emphasize interactivity without feeling distracting.
+  ------------------------------------------------------------------------- */
   .preloader {
     @apply w-full flex justify-center items-center py-20;
     animation: fadePulse 1.2s ease-in-out infinite;
@@ -346,12 +390,8 @@
   }
 
   @keyframes fadePulse {
-    0%, 100% {
-      opacity: 0.4;
-    }
-    50% {
-      opacity: 1;
-    }
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
   }
 
   .fade-in {

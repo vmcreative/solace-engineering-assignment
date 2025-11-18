@@ -1,24 +1,31 @@
 "use client";
 
+import React from "react";
 import MultiSelect from "@/components/MultiSelect";
 
 interface FiltersBarProps {
+  // Name search
   searchTerm: string;
   setSearchTerm: (v: string) => void;
 
+  // Whether to match first name, last name, or both
   nameModes: ("first" | "last")[];
   setNameModes: (v: ("first" | "last")[]) => void;
 
+  // Enforces exact string equality instead of "contains"
   exactMatch: boolean;
   setExactMatch: (v: boolean) => void;
 
+  // Minimum years experience
   minYears: number | null;
   setMinYears: (v: number | null) => void;
 
+  // Dynamic dropdown options generated from current dataset
   cities: string[];
   degrees: string[];
   specialties: string[];
 
+  // Active selections for multiselect fields
   selectedCities: string[];
   setSelectedCities: (v: string[]) => void;
 
@@ -29,49 +36,62 @@ interface FiltersBarProps {
   setSelectedSpecialties: (v: string[]) => void;
 }
 
-export default function FiltersBar(props: FiltersBarProps) {
-  const {
-    searchTerm,
-    setSearchTerm,
-    nameModes,
-    setNameModes,
-    exactMatch,
-    setExactMatch,
-    minYears,
-    setMinYears,
-    cities,
-    degrees,
-    specialties,
-    selectedCities,
-    setSelectedCities,
-    selectedDegrees,
-    setSelectedDegrees,
-    selectedSpecialties,
-    setSelectedSpecialties,
-  } = props;
-
-  return ( 
+/**
+ * FiltersBarComponent
+ * -----------------------------------------------------------
+ * Pure presentational component for all filtering controls.
+ * This component:
+ *   • Does not fetch data
+ *   • Does not compute derived state
+ *   • Simply reflects user input outward through callbacks
+ *
+ * Using isolated state + controlled inputs allows the parent
+ * page component to manage how filters interact with backend
+ * queries without unnecessary re-renders.
+ */
+function FiltersBarComponent({
+  searchTerm,
+  setSearchTerm,
+  nameModes,
+  setNameModes,
+  exactMatch,
+  setExactMatch,
+  minYears,
+  setMinYears,
+  cities,
+  degrees,
+  specialties,
+  selectedCities,
+  setSelectedCities,
+  selectedDegrees,
+  setSelectedDegrees,
+  selectedSpecialties,
+  setSelectedSpecialties,
+}: FiltersBarProps) {
+  return (
     <div className="filters-bar">
       <h1>Solace Advocates Search</h1>
-      
+
+      {/* --------------------------------------------- */}
+      {/* Row 1 — Name search, match mode, exact match */}
+      {/* --------------------------------------------- */}
       <div className="filters-bar__row">
 
-        {/* SEARCH */}
+        {/* Name text search */}
         <div className="filters-bar__field filters-bar__name">
           <label>
             Search by name
-
             <input
+              key="stable-search-input" // prevents focus loss on re-render
               id="search"
               value={searchTerm}
               placeholder="Enter a name"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </label>
-          
         </div>
 
-        {/* NAME MODE */}
+        {/* Match "first", "last", or both */}
         <MultiSelect
           label="Match"
           options={["first", "last"]}
@@ -80,22 +100,22 @@ export default function FiltersBar(props: FiltersBarProps) {
           onChange={setNameModes}
         />
 
-        {/* Exact Name Match Filter */}
+        {/* Boolean toggle for strict equality */}
         <label className="filters-bar__inline">
           <input
             type="checkbox"
             checked={exactMatch}
             onChange={(e) => setExactMatch(e.target.checked)}
           />
-
           Exact Match
         </label>
       </div>
 
-      {/* Multiselect Filters */}
+      {/* --------------------------------------------- */}
+      {/* Row 2 — Cities, Degrees, Specialties, Min Years */}
+      {/* --------------------------------------------- */}
       <div className="filters-bar__row">
 
-        {/* Location Filter */}
         <MultiSelect
           label="Cities"
           options={cities}
@@ -103,7 +123,6 @@ export default function FiltersBar(props: FiltersBarProps) {
           onChange={setSelectedCities}
         />
 
-        {/* Degree Filter */}
         <MultiSelect
           label="Degrees"
           options={degrees}
@@ -112,7 +131,6 @@ export default function FiltersBar(props: FiltersBarProps) {
           onChange={setSelectedDegrees}
         />
 
-        {/* Specialties Filter */}
         <MultiSelect
           label="Specialties"
           options={specialties}
@@ -120,18 +138,16 @@ export default function FiltersBar(props: FiltersBarProps) {
           onChange={setSelectedSpecialties}
         />
 
-        {/* Minimum Years Experience Filter */}
+        {/* Minimum years of experience */}
         <div className="filters-bar__field">
           <label>
             Minimum Years
-
             <input
               id="years-input"
               type="number"
               min={1}
               value={minYears ?? ""}
               placeholder="Any"
-              aria-label="Minimum years of experience"
               onChange={(e) =>
                 setMinYears(e.target.value ? Number(e.target.value) : null)
               }
@@ -143,3 +159,15 @@ export default function FiltersBar(props: FiltersBarProps) {
     </div>
   );
 }
+
+/**
+ * Memoization
+ * -----------------------------------------------------------
+ * The filters bar re-renders frequently as the parent component
+ * updates advocate results. Wrapping in `React.memo` ensures
+ * this component only re-renders when a *filter input* actually
+ * changes — improving responsiveness and preventing flicker.
+ */
+const FiltersBar = React.memo(FiltersBarComponent);
+
+export default FiltersBar;

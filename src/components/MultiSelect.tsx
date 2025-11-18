@@ -3,13 +3,37 @@
 import { useState, useRef, useEffect } from "react";
 
 interface MultiSelectProps<T extends string> {
+  /** Label shown above the multiselect field */
   label: string;
+
+  /** All available selectable options */
   options: T[];
+
+  /** Currently selected values */
   selected: T[];
+
+  /** Upstream change handler */
   onChange: (values: T[]) => void;
+
+  /** Whether to show a search field inside the dropdown */
   showSearch?: boolean;
 }
 
+/**
+ * MultiSelect
+ * --------------------------------------------------------------
+ * A lightweight, dependency-free multiselect dropdown component.
+ *
+ * Design goals:
+ *   • Keyboard + mouse friendly
+ *   • Click-outside and ESC-to-close behavior
+ *   • Searchable dropdown (optional)
+ *   • Clear UX: selected items are pinned to the top of the list
+ *   • Fully controlled component (parent owns selected state)
+ *
+ * This keeps the UI declarative while remaining flexible enough
+ * for multiple filters in the assignment.
+ */
 export default function MultiSelect<T extends string>({
   label,
   options,
@@ -23,18 +47,23 @@ export default function MultiSelect<T extends string>({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  /* Close on outside click */
+  /* ------------------------------------------------------------
+     Close dropdown when clicking outside
+     ------------------------------------------------------------ */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  /* ESC to close dropdown */
+  /* ------------------------------------------------------------
+     Allow ESC key to close dropdown
+     ------------------------------------------------------------ */
   useEffect(() => {
     if (!open) return;
 
@@ -49,45 +78,47 @@ export default function MultiSelect<T extends string>({
     return () => document.removeEventListener("keydown", handleKey);
   }, [open]);
 
-  /* Autofocus search when opened */
+  /* ------------------------------------------------------------
+     Autofocus search field when opening the dropdown
+     ------------------------------------------------------------ */
   useEffect(() => {
     if (open && showSearch && searchRef.current) {
       setTimeout(() => searchRef.current?.focus(), 10);
     }
   }, [open, showSearch]);
 
-  /* ---------------------------------------
-     SORT OPTIONS SO SELECTED COME FIRST
-  ---------------------------------------- */
-
+  /* ------------------------------------------------------------
+     Sort options: selected values pinned at the top
+     ------------------------------------------------------------ */
   const sorted = [...options].sort((a, b) => {
     const aSelected = selected.includes(a);
     const bSelected = selected.includes(b);
 
-    // Selected always first
     if (aSelected && !bSelected) return -1;
     if (!aSelected && bSelected) return 1;
-
-    // Otherwise fallback alphabetical
     return a.localeCompare(b);
   });
 
-  /* ---------------------------------------
-     APPLY SEARCH FILTER (AFTER SORTING)
-  ---------------------------------------- */
-
+  /* ------------------------------------------------------------
+     Apply text search (after sorting)
+     ------------------------------------------------------------ */
   const filtered = showSearch
     ? sorted.filter((opt) =>
         opt.toLowerCase().includes(search.toLowerCase())
       )
     : sorted;
 
+  /* ------------------------------------------------------------
+     Toggle selection state for a single option
+     ------------------------------------------------------------ */
   const toggle = (val: T) => {
     const newValues = selected.includes(val)
       ? selected.filter((v) => v !== val)
       : [...selected, val];
 
     onChange(newValues);
+
+    // Reset and refocus search field for faster repeated selection
     setSearch("");
 
     if (showSearch && searchRef.current) {
@@ -95,11 +126,15 @@ export default function MultiSelect<T extends string>({
     }
   };
 
+  /* ------------------------------------------------------------
+     RENDER
+     ------------------------------------------------------------ */
   return (
     <div ref={wrapperRef} className="filters-bar__field">
       <label>
         {label}
 
+        {/* Button that displays current selection and toggles dropdown */}
         <button
           type="button"
           className="filters-bar__selector"
@@ -115,7 +150,8 @@ export default function MultiSelect<T extends string>({
 
       {open && (
         <div className="filter-dropdown__panel">
-          {/* SEARCH INPUT */}
+
+          {/* Optional searchable input */}
           {showSearch && (
             <input
               ref={searchRef}
@@ -127,7 +163,7 @@ export default function MultiSelect<T extends string>({
             />
           )}
 
-          {/* OPTIONS */}
+          {/* Option list */}
           {filtered.map((opt) => (
             <label key={opt} className="filter-dropdown__option">
               <input
@@ -135,12 +171,19 @@ export default function MultiSelect<T extends string>({
                 checked={selected.includes(opt)}
                 onChange={() => toggle(opt)}
               />
-              <span className={selected.includes(opt) ? "font-medium text-green-dark" : ""}>
+              <span
+                className={
+                  selected.includes(opt)
+                    ? "font-medium text-green-dark"
+                    : ""
+                }
+              >
                 {opt}
               </span>
             </label>
           ))}
 
+          {/* No results state (after filtering) */}
           {filtered.length === 0 && (
             <p className="filter-dropdown__empty">No results</p>
           )}
