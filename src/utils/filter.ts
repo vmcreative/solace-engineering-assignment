@@ -4,7 +4,7 @@ export function advocateMatchesFilters(
   a: Advocate,
   {
     search,
-    nameMode,
+    nameModes,
     exactMatch,
     selectedCities,
     selectedDegrees,
@@ -12,7 +12,7 @@ export function advocateMatchesFilters(
     minYears,
   }: {
     search: string;
-    nameMode: "full" | "first" | "last";
+    nameModes: ("first" | "last")[];
     exactMatch: boolean;
     selectedCities: string[];
     selectedDegrees: string[];
@@ -23,21 +23,25 @@ export function advocateMatchesFilters(
   const match = (v: string, s: string) =>
     exactMatch ? v === s : v.includes(s);
 
-  /* Name search */
+  /* ---------------- NAME SEARCH ---------------- */
   if (search) {
-    const name =
-      nameMode === "full"
-        ? `${a.firstName} ${a.lastName}`.toLowerCase()
-        : nameMode === "first"
-        ? a.firstName.toLowerCase()
-        : a.lastName.toLowerCase();
+    const checks: boolean[] = [];
 
-    if (!match(name, search)) return false;
+    if (nameModes.includes("first")) {
+      checks.push(match(a.firstName.toLowerCase(), search));
+    }
+
+    if (nameModes.includes("last")) {
+      checks.push(match(a.lastName.toLowerCase(), search));
+    }
+
+    if (!checks.some(Boolean)) return false;
   }
 
+  /* -------------- OTHER FILTERS --------------- */
+
   if (selectedCities.length && !selectedCities.includes(a.city)) return false;
-  if (selectedDegrees.length && !selectedDegrees.includes(a.degree))
-    return false;
+  if (selectedDegrees.length && !selectedDegrees.includes(a.degree)) return false;
 
   if (selectedSpecialties.length) {
     const ok = a.specialties.some((s) => selectedSpecialties.includes(s));

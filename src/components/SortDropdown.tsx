@@ -42,63 +42,34 @@ export default function SortDropdown({
     : "arrow_downward";
 
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <div ref={ref}>
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={`Sort ${label}`}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          cursor: "pointer",
-          border: "none",
-          background: "transparent",
-          padding: "2px 4px",
-          fontSize: "14px",
-        }}
+        className="sort-dropdown__button"
       >
-        {/* Label is now clickable */}
         <span>{label}</span>
 
         {/* Icon */}
-        <span
-          className="material-symbols-rounded"
-          style={{
-            fontSize: "18px",
-            color: isActive ? "#000" : "#777",
-          }}
-        >
+        <span className={`material-symbols-rounded sort-dropdown__button-icon ${isActive ? "active" : ""}`}>
           {headerIcon}
         </span>
       </button>
 
       {/* Dropdown Menu */}
       {open && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            right: 0,
-            background: "white",
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            zIndex: 200,
-            padding: "4px 0",
-            width: "160px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-          }}
-        >
+        <div className="sort-dropdown__panel">
           {/* ASC */}
           <button
             onClick={() => {
               onAsc();
               setOpen(false);
             }}
-            style={menuItemStyle}
+            className="sort-dropdown__option"
           >
-            <span className="material-symbols-rounded" style={iconStyle}>
+            <span className="material-symbols-rounded sort-dropdown__icon">
               arrow_upward
             </span>
             Ascending
@@ -110,9 +81,9 @@ export default function SortDropdown({
               onDesc();
               setOpen(false);
             }}
-            style={menuItemStyle}
+            className="sort-dropdown__option"
           >
-            <span className="material-symbols-rounded" style={iconStyle}>
+            <span className="material-symbols-rounded sort-dropdown__icon">
               arrow_downward
             </span>
             Descending
@@ -124,9 +95,9 @@ export default function SortDropdown({
               onClear();
               setOpen(false);
             }}
-            style={menuItemStyle}
+            className="sort-dropdown__option"
           >
-            <span className="material-symbols-rounded" style={iconStyle}>
+            <span className="material-symbols-rounded sort-dropdown__icon">
               close
             </span>
             Clear
@@ -136,24 +107,3 @@ export default function SortDropdown({
     </div>
   );
 }
-
-/* Styles */
-const menuItemStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  width: "100%",
-  padding: "6px 10px",
-  background: "none",
-  border: "none",
-  textAlign: "left",
-  fontSize: "14px",
-  cursor: "pointer",
-  color: "#333",
-};
-
-const iconStyle: React.CSSProperties = {
-  fontSize: "18px",
-  color: "#444",
-  flexShrink: 0,
-};

@@ -1,14 +1,13 @@
 "use client";
 
 import MultiSelect from "@/components/MultiSelect";
-import { NameFilterMode } from "@/types/filters";
 
 interface FiltersBarProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
 
-  nameMode: NameFilterMode;
-  setNameMode: (v: NameFilterMode) => void;
+  nameModes: ("first" | "last")[];
+  setNameModes: (v: ("first" | "last")[]) => void;
 
   exactMatch: boolean;
   setExactMatch: (v: boolean) => void;
@@ -30,65 +29,73 @@ interface FiltersBarProps {
   setSelectedSpecialties: (v: string[]) => void;
 }
 
-export default function FiltersBar({
-  searchTerm,
-  setSearchTerm,
-  nameMode,
-  setNameMode,
-  exactMatch,
-  setExactMatch,
-  minYears,
-  setMinYears,
-  cities,
-  degrees,
-  specialties,
-  selectedCities,
-  setSelectedCities,
-  selectedDegrees,
-  setSelectedDegrees,
-  selectedSpecialties,
-  setSelectedSpecialties,
-}: FiltersBarProps) {
-  return (
-    <div style={{ marginBottom: "20px" }}>
-      {/* SEARCH */}
-      <label htmlFor="search">Search by name:</label>
-      <input
-        id="search"
-        value={searchTerm}
-        placeholder="Enter a name..."
-        style={{ border: "1px solid black", marginLeft: "6px" }}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+export default function FiltersBar(props: FiltersBarProps) {
+  const {
+    searchTerm,
+    setSearchTerm,
+    nameModes,
+    setNameModes,
+    exactMatch,
+    setExactMatch,
+    minYears,
+    setMinYears,
+    cities,
+    degrees,
+    specialties,
+    selectedCities,
+    setSelectedCities,
+    selectedDegrees,
+    setSelectedDegrees,
+    selectedSpecialties,
+    setSelectedSpecialties,
+  } = props;
 
-      {/* NAME FILTER MODE */}
-      <label htmlFor="name-mode" style={{ marginLeft: "12px" }}>
-        Name Mode:
-      </label>
-      <select
-        id="name-mode"
-        title="Filter by first, last, or full name"
-        value={nameMode}
-        onChange={(e) => setNameMode(e.target.value as NameFilterMode)}
-        style={{ marginLeft: "6px" }}
-      >
-        <option value="full">Full Name</option>
-        <option value="first">First Name</option>
-        <option value="last">Last Name</option>
-      </select>
+  return ( 
+    <div className="filters-bar">
+      <h1>Solace Advocates Search</h1>
+      
+      <div className="filters-bar__row">
 
-      {/* EXACT MATCH */}
-      <label style={{ marginLeft: "12px" }}>
-        <input
-          type="checkbox"
-          checked={exactMatch}
-          onChange={(e) => setExactMatch(e.target.checked)}
+        {/* SEARCH */}
+        <div className="filters-bar__field filters-bar__name">
+          <label>
+            Search by name
+
+            <input
+              id="search"
+              value={searchTerm}
+              placeholder="Enter a name"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </label>
+          
+        </div>
+
+        {/* NAME MODE */}
+        <MultiSelect
+          label="Match"
+          options={["first", "last"]}
+          selected={nameModes}
+          showSearch={false}
+          onChange={setNameModes}
         />
-        Exact Match
-      </label>
 
-      {/* MULTISELECT FILTERS */}
-      <div style={{ display: "flex", gap: "20px", marginTop: "12px" }}>
+        {/* Exact Name Match Filter */}
+        <label className="filters-bar__inline">
+          <input
+            type="checkbox"
+            checked={exactMatch}
+            onChange={(e) => setExactMatch(e.target.checked)}
+          />
+
+          Exact Match
+        </label>
+      </div>
+
+      {/* Multiselect Filters */}
+      <div className="filters-bar__row">
+
+        {/* Location Filter */}
         <MultiSelect
           label="Cities"
           options={cities}
@@ -96,13 +103,16 @@ export default function FiltersBar({
           onChange={setSelectedCities}
         />
 
+        {/* Degree Filter */}
         <MultiSelect
           label="Degrees"
           options={degrees}
           selected={selectedDegrees}
+          showSearch={false}
           onChange={setSelectedDegrees}
         />
 
+        {/* Specialties Filter */}
         <MultiSelect
           label="Specialties"
           options={specialties}
@@ -110,21 +120,25 @@ export default function FiltersBar({
           onChange={setSelectedSpecialties}
         />
 
-        {/* MIN YEARS */}
-        <div>
-          <label htmlFor="years-input">Min Years Experience</label>
-          <input
-            id="years-input"
-            type="number"
-            min={1}
-            value={minYears ?? ""}
-            placeholder="Show All"
-            aria-label="Minimum years of experience"
-            onChange={(e) =>
-              setMinYears(e.target.value ? Number(e.target.value) : null)
-            }
-          />
+        {/* Minimum Years Experience Filter */}
+        <div className="filters-bar__field">
+          <label>
+            Minimum Years
+
+            <input
+              id="years-input"
+              type="number"
+              min={1}
+              value={minYears ?? ""}
+              placeholder="Any"
+              aria-label="Minimum years of experience"
+              onChange={(e) =>
+                setMinYears(e.target.value ? Number(e.target.value) : null)
+              }
+            />
+          </label>
         </div>
+
       </div>
     </div>
   );

@@ -1,1 +1,0 @@
-export type NameFilterMode = "full" | "first" | "last";

@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from "react";
 
 import { Advocate, AdvocatesResponse } from "@/types/advocate";
-import { NameFilterMode } from "@/types/filters";
 
 import { generateStableId } from "@/utils/id";
 import { sortAdvocates, SortKey } from "@/utils/sort";
@@ -21,7 +20,7 @@ export default function Home() {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [nameMode, setNameMode] = useState<NameFilterMode>("full");
+  const [nameModes, setNameModes] = useState<("first" | "last")[]>(["first", "last"]);
   const [exactMatch, setExactMatch] = useState(false);
   const [minYears, setMinYears] = useState<number | null>(null);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
@@ -62,7 +61,7 @@ export default function Home() {
     const res = advocates.filter((a) =>
       advocateMatchesFilters(a, {
         search,
-        nameMode,
+        nameModes,
         exactMatch,
         selectedCities,
         selectedDegrees,
@@ -75,7 +74,7 @@ export default function Home() {
   }, [
     advocates,
     searchTerm,
-    nameMode,
+    nameModes,
     exactMatch,
     selectedCities,
     selectedDegrees,
@@ -85,7 +84,15 @@ export default function Home() {
     sortDir,
   ]);
 
-  if (loading) return <main>Loading…</main>;
+  if (loading) {
+    return (
+      <main>
+        <div className="preloader">
+          <span className="preloader__text">Loading…</span>
+        </div>
+      </main>
+    );
+  }
   if (error) return <main>Error: {error}</main>;
 
   const cities = Array.from(new Set(advocates.map(a => a.city))).sort();
@@ -103,15 +110,13 @@ export default function Home() {
   ];
 
   return (
-    <main style={{ margin: "24px" }}>
-      <h1>Solace Advocates</h1>
-
+    <main className="fade-in"> 
       <FiltersBar
         {...{
           searchTerm,
           setSearchTerm,
-          nameMode,
-          setNameMode,
+          nameModes,
+          setNameModes,
           exactMatch,
           setExactMatch,
           minYears,
@@ -128,50 +133,60 @@ export default function Home() {
         }}
       />
 
-      <table>
-        <thead>
-          <tr>
-            {columns.map((col) => (
-              <th key={col.key}>
-                <SortDropdown
-                  label={col.label}
-                  onAsc={() => {
-                    setSortKey(col.key as SortKey);
-                    setSortDir("asc");
-                  }}
-                  onDesc={() => {
-                    setSortKey(col.key as SortKey);
-                    setSortDir("desc");
-                  }}
-                  onClear={() => setSortKey(null)}
-                  isActive={sortKey === col.key}
-                  direction={sortDir}
-                />
-              </th>
-            ))}
-            <th>Specialties</th>
-            <th>Phone</th>
-          </tr>
-        </thead>
+      {/* Table Container */}
+      <div className="advocates-container">
+        <div className="advocates-scroll">
+          <table className="advocates" role="table">
+            <thead>
+              <tr>
+                {columns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={`advocates-header__${col.key}`}
+                  >
+                    <SortDropdown
+                      label={col.label}
+                      onAsc={() => {
+                        setSortKey(col.key as SortKey);
+                        setSortDir("asc");
+                      }}
+                      onDesc={() => {
+                        setSortKey(col.key as SortKey);
+                        setSortDir("desc");
+                      }}
+                      onClear={() => setSortKey(null)}
+                      isActive={sortKey === col.key}
+                      direction={sortDir}
+                    />
+                  </th>
+                ))}
+                <th>Specialties</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
 
-        <tbody>
-          {filtered.map((a) => (
-            <tr key={a._id}>
-              <td>{a.firstName}</td>
-              <td>{a.lastName}</td>
-              <td>{a.degree}</td>
-              <td>{a.yearsOfExperience}</td>
-              <td>{a.city}</td>
+            <tbody>
+              {filtered.map((a, i) => (
+                <tr key={a._id} className="advocate">
+                  <td className="advocate__firstname">{a.firstName}</td>
+                  <td className="advocate__lastname">{a.lastName}</td>
+                  <td className="advocate__degree">{a.degree}</td>
+                  <td className="advocate__experience">{a.yearsOfExperience}</td>
+                  <td className="advocate__city">{a.city}</td>
 
-              <td>
-                <SpecialtiesCell items={a.specialties} />
-              </td>
+                  <td className="advocate__specialties">
+                      <SpecialtiesCell items={a.specialties} active={selectedSpecialties} />
+                  </td>
 
-              <td>{formatPhone(a.phoneNumber)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  <td className="advocate__phone">
+                    {formatPhone(a.phoneNumber)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </main>
   );
 }
